@@ -1,0 +1,13 @@
+{
+  "name":"Football Skill Quest",
+  "short_name":"Skill Quest",
+  "lang":"th",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#061a14",
+  "theme_color":"#073b2a",
+  "description":"เกมฝึกทักษะฟุตบอลสำหรับนักเรียนมัธยม เล่นด้วยการลากและปัดนิ้วบนมือถือ",
+  "icons":[
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

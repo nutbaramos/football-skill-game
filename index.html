@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#073b2a" />
+<link rel="manifest" href="manifest.json" />
+<title>Football Skill Quest</title>
+<style>
+:root{
+  --bg:#061a14; --panel:#0b2a20; --panel2:#12382b; --accent:#d5ff3f; --text:#f7fff9;
+  --muted:#a7c3b6; --danger:#ff5d73; --gold:#ffd56a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:linear-gradient(180deg,#041711,#0a2b21);font-family:system-ui,-apple-system,"Noto Sans Thai",sans-serif;color:var(--text);overflow:hidden}
+button,input{font:inherit}
+#app{height:100%;display:flex;flex-direction:column}
+.topbar{height:62px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,22,16,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);z-index:10}
+.brand{display:flex;gap:10px;align-items:center;font-weight:800;letter-spacing:.2px}
+.logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#42ff91);color:#072217;font-size:22px;box-shadow:0 8px 30px rgba(140,255,100,.2)}
+.pill{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px;color:var(--muted)}
+#gameWrap{position:relative;flex:1;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;background:#0e6a42}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(180deg,rgba(2,12,9,.45),rgba(2,12,9,.72));z-index:5}
+.card{width:min(560px,100%);background:linear-gradient(180deg,rgba(13,43,33,.97),rgba(7,29,22,.98));border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.h1{font-size:28px;font-weight:900;margin:0 0 6px}.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}
+.row{display:flex;gap:10px}.field{display:flex;flex-direction:column;gap:6px;flex:1}.field label{font-size:12px;color:var(--muted)}
+input{width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.13);background:#071f18;color:white;outline:none}
+.btn{border:0;border-radius:15px;padding:13px 15px;font-weight:800;cursor:pointer;background:var(--accent);color:#092319;box-shadow:0 8px 22px rgba(213,255,63,.18)}
+.btn.secondary{background:rgba(255,255,255,.10);color:#fff;box-shadow:none}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.level{padding:14px 10px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);text-align:center}
+.level strong{display:block;font-size:14px}.level small{display:block;color:var(--muted);margin-top:3px}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;z-index:3;pointer-events:none}
+.hud .box{background:rgba(3,20,15,.78);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);padding:8px 10px;border-radius:13px;font-size:12px;min-width:90px}
+.hud b{color:var(--accent)}
+.help{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(4,24,18,.80);border:1px solid rgba(255,255,255,.10);padding:10px 14px;border-radius:999px;color:#eaffef;font-size:12px;z-index:3;pointer-events:none;white-space:nowrap}
+.toast{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-10px);padding:12px 16px;border-radius:14px;background:#061f18;border:1px solid rgba(255,255,255,.12);z-index:20;opacity:0;pointer-events:none;transition:.25s;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.progress{height:8px;background:rgba(255,255,255,.10);border-radius:999px;overflow:hidden;margin:10px 0 16px}.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#43ff9a);transition:.3s}
+.badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:rgba(213,255,63,.12);color:var(--accent);font-size:12px;font-weight:800;margin-bottom:10px}
+.resultScore{font-size:56px;font-weight:950;line-height:1;color:var(--gold);margin:8px 0}
+.footerBtns{display:flex;gap:10px;margin-top:16px}.footerBtns .btn{flex:1}
+@media(max-width:520px){.h1{font-size:24px}.card{padding:18px}.levels{grid-template-columns:1fr}.row{flex-direction:column}.topbar{height:58px}.brand span:last-child{font-size:14px}.pill{font-size:11px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand"><div class="logo">⚽</div><span>Football Skill Quest</span></div>
+    <div class="pill" id="playerTag">ผู้เล่นใหม่</div>
+  </div>
+  <div id="gameWrap">
+    <canvas id="game"></canvas>
+    <div class="hud" id="hud" style="display:none">
+      <div class="box">ด่าน <b id="hudLevel">1</b><br><span id="hudTitle">เลี้ยงหลบกรวย</span></div>
+      <div class="box" style="text-align:right">คะแนน <b id="hudScore">0</b><br>เวลา <span id="hudTime">60</span> วิ</div>
+    </div>
+    <div class="help" id="help" style="display:none">ลากนิ้วเพื่อเลี้ยงบอลไปข้างหน้า</div>
+    <div class="toast" id="toast"></div>
+    <div class="overlay" id="startOverlay">
+      <div class="card">
+        <div class="badge">เกมฝึกทักษะฟุตบอลสำหรับนักเรียนมัธยม</div>
+        <h1 class="h1">สร้างนักเตะของคุณ</h1>
+        <p class="sub">ตั้งชื่อและหมายเลข แล้วฝึกทักษะตั้งแต่พื้นฐานไปสู่การยิงประตู เล่นได้ด้วยการลากและปัดนิ้วบนมือถือ</p>
+        <div class="row">
+          <div class="field"><label>ชื่อนักเตะ</label><input id="playerName" placeholder="เช่น ณัฐพงษ์" maxlength="18"></div>
+          <div class="field" style="max-width:140px"><label>หมายเลข</label><input id="playerNo" inputmode="numeric" placeholder="10" maxlength="2"></div>
+        </div>
+        <div class="levels">
+          <div class="level"><strong>ด่าน 1</strong><small>เลี้ยงหลบกรวย</small></div>
+          <div class="level"><strong>ด่าน 2</strong><small>เลี้ยงหลบกองหลัง</small></div>
+          <div class="level"><strong>ด่าน 3</strong><small>จบสกอร์</small></div>
+        </div>
+        <button class="btn" id="startBtn" style="width:100%">เริ่มเกม</button>
+      </div>
+    </div>
+    <div class="overlay" id="levelOverlay" style="display:none">
+      <div class="card">
+        <div class="badge" id="levelBadge">ด่าน 1</div>
+        <h1 class="h1" id="levelHeading">เลี้ยงหลบกรวย</h1>
+        <p class="sub" id="levelDesc"></p>
+        <div class="progress"><i id="levelProgress"></i></div>
+        <button class="btn" id="playLevelBtn" style="width:100%">เริ่มด่าน</button>
+      </div>
+    </div>
+    <div class="overlay" id="resultOverlay" style="display:none">
+      <div class="card" style="text-align:center">
+        <div class="badge">จบด่าน</div>
+        <h1 class="h1" id="resultTitle">ยอดเยี่ยม!</h1>
+        <div class="resultScore" id="resultScore">0</div>
+        <p class="sub" id="resultText"></p>
+        <div class="footerBtns">
+          <button class="btn secondary" id="retryBtn">เล่นใหม่</button>
+          <button class="btn" id="nextBtn">ด่านถัดไป</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+let W=0,H=0,dpr=1;
+let gameState='menu', level=1, score=0, timeLeft=60, timerAcc=0, last=0;
+let player={name:'นักเตะ',no:'10',x:0,y:0,r:18,targetX:0,targetY:0,angle:0};
+let ball={x:0,y:0,r:10,vx:0,vy:0};
+let cones=[], defenders=[], goals=[], particles=[];
+let dragging=false, dragStart=null, lastPointer=null, levelDone=false;
+const levels={
+  1:{title:'เลี้ยงหลบกรวย', desc:'ลากนิ้วเพื่อควบคุมนักเตะและบอล ผ่านกรวยให้ครบทุกจุด ห้ามชนกรวย', time:55},
+  2:{title:'เลี้ยงหลบกองหลัง', desc:'ลากนิ้วเปลี่ยนทิศทาง หลบกองหลังที่เคลื่อนที่ แล้วพาบอลเข้าเขตยิง', time:55},
+  3:{title:'จบสกอร์', desc:'พาบอลเข้าเขตหน้าประตู แล้วปัดนิ้วขึ้นอย่างรวดเร็วเพื่อยิงให้ผ่านผู้รักษาประตู', time:45}
+};
+
+function resize(){
+  const r=canvas.getBoundingClientRect(); dpr=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(gameState!=='menu' && gameState!=='levelIntro') resetPositionsOnly();
+}
+window.addEventListener('resize',resize); resize();
+
+function resetPositionsOnly(){
+  player.x=W/2; player.y=H-100; player.targetX=player.x; player.targetY=player.y;
+  ball.x=player.x; ball.y=player.y-28; ball.vx=ball.vy=0;
+}
+function setupLevel(n){
+  level=n; score=0; timeLeft=levels[n].time; timerAcc=0; levelDone=false; cones=[];defenders=[];goals=[];particles=[];
+  resetPositionsOnly();
+  if(n===1){
+    const xs=[.32,.68,.40,.64,.34,.66,.42,.58];
+    xs.forEach((p,i)=>cones.push({x:W*p,y:H-(170+i*70),hit:false,passed:false}));
+  } else if(n===2){
+    for(let i=0;i<5;i++) defenders.push({x:W*(.2+.15*i),y:H-(230+i*85),r:20,baseX:W*(.2+.15*i),t:i*1.3,hit:false});
+  } else {
+    goals=[{x:W/2,y:70,w:Math.min(W*.62,340),h:58}];
+    defenders=[{x:W/2,y:135,r:24,keeper:true,t:0}];
+  }
+  $('hudLevel').textContent=n; $('hudTitle').textContent=levels[n].title; $('hudScore').textContent='0'; $('hudTime').textContent=timeLeft;
+  $('help').textContent=n===3?'ลากเพื่อพาบอลเข้าหน้าประตู แล้วปัดขึ้นเร็ว ๆ เพื่อยิง':'ลากนิ้วเพื่อเลี้ยงบอลไปข้างหน้า';
+}
+function showLevelIntro(n){
+  gameState='levelIntro'; setupLevel(n);
+  $('levelBadge').textContent='ด่าน '+n;
+  $('levelHeading').textContent=levels[n].title;
+  $('levelDesc').textContent=levels[n].desc;
+  $('levelProgress').style.width=((n-1)/3*100)+'%';
+  $('levelOverlay').style.display='flex'; $('resultOverlay').style.display='none';
+  $('hud').style.display='none'; $('help').style.display='none';
+}
+function beginLevel(){ gameState='playing'; $('levelOverlay').style.display='none'; $('hud').style.display='flex'; $('help').style.display='block'; last=performance.now(); }
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),1000)}
+function finish(win=true){
+  if(levelDone)return;levelDone=true;gameState='result';
+  $('hud').style.display='none';$('help').style.display='none';
+  const bonus=Math.max(0,timeLeft)*5; if(win)score+=bonus;
+  $('resultScore').textContent=score;
+  $('resultTitle').textContent=win?'ผ่านด่าน!':'หมดเวลา';
+  $('resultText').textContent=win?`คะแนนรวม ${score} คะแนน • โบนัสเวลา ${bonus} คะแนน`:`ลองใหม่อีกครั้ง คุณทำได้แน่นอน`;
+  $('nextBtn').textContent=level<3?'ด่านถัดไป':'เล่นตั้งแต่ต้น';
+  $('resultOverlay').style.display='flex';
+}
+function emit(x,y,n=10){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:1})}
+
+function pointerPos(e){const r=canvas.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:p.clientX-r.left,y:p.clientY-r.top}}
+function down(e){if(gameState!=='playing')return;dragging=true;dragStart=pointerPos(e);lastPointer=dragStart;e.preventDefault()}
+function move(e){if(!dragging||gameState!=='playing')return;const p=pointerPos(e);const dx=p.x-lastPointer.x,dy=p.y-lastPointer.y;player.targetX+=dx*1.15;player.targetY+=dy*1.15;player.targetX=Math.max(28,Math.min(W-28,player.targetX));player.targetY=Math.max(75,Math.min(H-55,player.targetY));lastPointer=p;e.preventDefault()}
+function up(e){if(!dragging||gameState!=='playing')return;const end=(e.changedTouches?{x:e.changedTouches[0].clientX-canvas.getBoundingClientRect().left,y:e.changedTouches[0].clientY-canvas.getBoundingClientRect().top}:pointerPos(e));
+  const dx=end.x-dragStart.x,dy=end.y-dragStart.y,dist=Math.hypot(dx,dy);
+  if(level===3 && player.y<260 && dy<-45 && dist>65){shoot(dx,dy,dist)}
+  dragging=false;dragStart=null;lastPointer=null;e.preventDefault();
+}
+canvas.addEventListener('touchstart',down,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up,{passive:false});
+canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+
+function shoot(dx,dy,dist){
+  const power=Math.min(18,8+dist/18);ball.vx=dx/dist*power;ball.vy=dy/dist*power*1.25;toast('ยิง!');emit(ball.x,ball.y,12);
+}
+function collisionCircle(a,b,rr){return Math.hypot(a.x-b.x,a.y-b.y)<rr}
+
+function update(dt){
+  if(gameState!=='playing')return;
+  timerAcc+=dt; if(timerAcc>=1){const dec=Math.floor(timerAcc);timerAcc-=dec;timeLeft=Math.max(0,timeLeft-dec);$('hudTime').textContent=timeLeft;if(timeLeft<=0)finish(false)}
+  // smooth player motion
+  player.x+=(player.targetX-player.x)*Math.min(1,dt*10);player.y+=(player.targetY-player.y)*Math.min(1,dt*10);
+  const speed=Math.hypot(player.targetX-player.x,player.targetY-player.y); if(speed>.2)player.angle=Math.atan2(player.targetY-player.y,player.targetX-player.x);
+  if(level!==3 || Math.hypot(ball.vx,ball.vy)<.3){
+    const bx=player.x,by=player.y-28;ball.x+=(bx-ball.x)*Math.min(1,dt*12);ball.y+=(by-ball.y)*Math.min(1,dt*12);
+  }
+  ball.x+=ball.vx; ball.y+=ball.vy; ball.vx*=.985; ball.vy*=.985;
+  if(ball.x<12||ball.x>W-12){ball.vx*=-.65;ball.x=Math.max(12,Math.min(W-12,ball.x))}
+  if(ball.y<20||ball.y>H-20){ball.vy*=-.65;ball.y=Math.max(20,Math.min(H-20,ball.y))}
+
+  if(level===1){
+    cones.forEach((c,i)=>{
+      if(!c.passed && player.y<c.y-24){c.passed=true;score+=100;$('hudScore').textContent=score;emit(c.x,c.y,8)}
+      if(!c.hit && collisionCircle(player,c,30)){c.hit=true;score=Math.max(0,score-50);$('hudScore').textContent=score;toast('ชนกรวย -50')}
+    });
+    if(player.y<90 && cones.every(c=>c.passed))finish(true);
+  } else if(level===2){
+    defenders.forEach((d,i)=>{
+      d.t+=dt*(1.1+i*.08);d.x=d.baseX+Math.sin(d.t*2.2)*Math.min(72,W*.15);
+      if(!d.hit && collisionCircle(player,d,38)){d.hit=true;score=Math.max(0,score-80);$('hudScore').textContent=score;toast('โดนแย่งบอล -80')}
+      if(player.y<d.y-26 && !d.passed){d.passed=true;score+=120;$('hudScore').textContent=score;emit(d.x,d.y,8)}
+    });
+    if(player.y<110){score+=300;$('hudScore').textContent=score;finish(true)}
+  } else if(level===3){
+    const k=defenders[0];k.t+=dt;k.x=W/2+Math.sin(k.t*3)*Math.min(95,W*.22);
+    if(Math.hypot(ball.vx,ball.vy)>1 && collisionCircle(ball,k,35)){ball.vy=Math.abs(ball.vy)*.75;ball.vx+=(ball.x-k.x)*.04;score=Math.max(0,score-100);$('hudScore').textContent=score;toast('ผู้รักษาประตูเซฟ!')}
+    const g=goals[0];
+    if(ball.y<g.y+g.h && ball.y>g.y-10 && ball.x>g.x-g.w/2 && ball.x<g.x+g.w/2 && ball.vy<0){score+=500;$('hudScore').textContent=score;emit(ball.x,ball.y,28);toast('GOAL! +500');setTimeout(()=>finish(true),450)}
+  }
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=dt*1.8});particles=particles.filter(p=>p.life>0);
+}
+
+function drawField(){
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#0f7b49');grad.addColorStop(1,'#0a5f3d');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  // mowing stripes
+  for(let y=0;y<H;y+=70){ctx.fillStyle=(Math.floor(y/70)%2)?'rgba(255,255,255,.025)':'rgba(0,0,0,.025)';ctx.fillRect(0,y,W,70)}
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  ctx.beginPath();ctx.moveTo(12,H/2);ctx.lineTo(W-12,H/2);ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,H/2,Math.min(62,W*.14),0,Math.PI*2);ctx.stroke();
+  // upper penalty box / goal area
+  const pw=Math.min(W*.7,380);ctx.strokeRect(W/2-pw/2,12,pw,125);
+  const gw=Math.min(W*.32,160);ctx.strokeRect(W/2-gw/2,12,gw,46);
+  // perspective shadows
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(0,0,0,.08)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function drawCone(c){
+  ctx.save();ctx.translate(c.x,c.y);ctx.fillStyle='rgba(0,0,0,.20)';ctx.beginPath();ctx.ellipse(0,9,15,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=c.hit?'#ff5d73':'#ff9f32';ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(-11,9);ctx.lineTo(11,9);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(-7,-1,14,4);ctx.restore();
+}
+function drawDef(d){
+  ctx.save();ctx.translate(d.x,d.y);ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(0,18,19,7,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=d.keeper?'#ffd56a':'#ff5d73';ctx.beginPath();ctx.arc(0,-11,8,0,Math.PI*2);ctx.fill();ctx.fillRect(-10,-2,20,25);ctx.fillStyle='#112a22';ctx.fillRect(-14,5,28,6);ctx.restore();
+}
+function drawPlayer(){
+  ctx.save();ctx.translate(player.x,player.y);ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(0,20,18,7,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#d5ff3f';ctx.beginPath();ctx.arc(0,-14,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0c2e22';ctx.fillRect(-12,-4,24,28);
+  ctx.fillStyle='#d5ff3f';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText(player.no,0,14);ctx.restore();
+}
+function drawBall(){
+  ctx.save();ctx.translate(ball.x,ball.y);ctx.fillStyle='rgba(0,0,0,.20)';ctx.beginPath();ctx.ellipse(4,8,11,5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,ball.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17231d';for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ctx.beginPath();ctx.arc(Math.cos(a)*5,Math.sin(a)*5,2.1,0,Math.PI*2);ctx.fill()}ctx.restore();
+}
+function drawGoal(){
+  const g=goals[0];if(!g)return;ctx.save();ctx.translate(g.x,g.y);ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=4;ctx.strokeRect(-g.w/2,0,g.w,g.h);ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;for(let x=-g.w/2;x<=g.w/2;x+=18){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,g.h);ctx.stroke()}for(let y=10;y<g.h;y+=10){ctx.beginPath();ctx.moveTo(-g.w/2,y);ctx.lineTo(g.w/2,y);ctx.stroke()}ctx.restore();
+}
+function draw(){
+  drawField(); if(level===3)drawGoal(); cones.forEach(drawCone); defenders.forEach(drawDef); drawPlayer();drawBall();
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle='#d5ff3f';ctx.beginPath();ctx.arc(p.x,p.y,2.4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});
+  if(gameState==='playing'){
+    ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='700 12px system-ui';ctx.textAlign='left';ctx.fillText(player.name+' #'+player.no,18,H-22);
+  }
+}
+function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+
+$('startBtn').addEventListener('click',()=>{
+  player.name=$('playerName').value.trim()||'นักเตะ';player.no=($('playerNo').value.trim().replace(/\D/g,'').slice(0,2))||'10';
+  $('playerTag').textContent=player.name+' #'+player.no; $('startOverlay').style.display='none'; showLevelIntro(1);
+});
+$('playLevelBtn').addEventListener('click',beginLevel);
+$('retryBtn').addEventListener('click',()=>{ $('resultOverlay').style.display='none'; showLevelIntro(level) });
+$('nextBtn').addEventListener('click',()=>{ $('resultOverlay').style.display='none'; showLevelIntro(level<3?level+1:1) });
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
+})();
+</script>
+</body>
+</html>
